@@ -1,0 +1,60 @@
+---
+# ImageCodecCUDA（CUDA 后端） 的 C++ 风格配置。
+#
+# 与主工程 ImageViewerQt 的根级 .clang-format 同源：缩进锁死 2 空格 / 80 列，
+# 指针与引用贴名字，include 不重排（本仓库按模块人工分组，字典序重排只会制造噪声）。
+#
+# 这些库会被 ImageViewer 等外部程序以子模块方式引用，风格必须与主工程一致，
+# 否则每次「三级提交」里的 format 步骤都会在边界处制造纯格式 diff。
+#
+# 参考：https://clang.llvm.org/docs/ClangFormatStyleOptions.html
+Language: Cpp
+BasedOnStyle: LLVM
+
+# 行宽与缩进：2 空格 / 80 列（**缩进锁死 2 空格**，不接受 4 空格与 Tab）。
+ColumnLimit: 80
+IndentWidth: 2
+TabWidth: 2
+UseTab: Never
+ContinuationIndentWidth: 4
+
+# 访问说明符与命名空间不额外缩进（public:/namespace 顶格）。
+AccessModifierOffset: -2
+NamespaceIndentation: None
+IndentCaseLabels: false
+IndentPPDirectives: None
+
+# 指针/引用绑定到名字一侧：const char *name、Type &value。
+DerivePointerAlignment: false
+PointerAlignment: Right
+ReferenceAlignment: Pointer
+QualifierAlignment: Left
+
+# 函数体与控制语句：短函数、短 if 允许单行；case 标签不合并。
+AllowShortFunctionsOnASingleLine: All
+AllowShortIfStatementsOnASingleLine: AllIfsAndElse
+AllowShortLoopsOnASingleLine: true
+AllowShortBlocksOnASingleLine: Empty
+AllowShortCaseLabelsOnASingleLine: false
+
+# 大括号与模板：函数体大括号紧贴函数名；模板声明不强制换行。
+BreakBeforeBraces: Attach
+AlwaysBreakTemplateDeclarations: No
+SpaceAfterTemplateKeyword: true
+
+# 构造初始化列表：能挤进一行就挤一行，否则逐项换行。
+BreakConstructorInitializers: BeforeColon
+ConstructorInitializerAllOnOneLineOrOnePerLine: false
+
+AlignAfterOpenBracket: Align
+
+# include 顺序由人工按模块分组，不做字典序重排（避免噪声 diff）。
+SortIncludes: false
+SortUsingDeclarations: true
+
+# 注释不重排、不重排行宽：中文注释常超宽，重排会破坏可读性。
+ReflowComments: false
+SpacesBeforeTrailingComments: 1
+
+# 语言标准：clang-format 22 尚不支持 c++23，这里取最近可用的 c++20。
+Standard: c++20

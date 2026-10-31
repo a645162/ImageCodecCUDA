@@ -1,0 +1,6 @@
+{
+  "name": "imagecodec-cuda",
+  "version-string": "0.1.0",
+  "dependencies": [ "zlib" ],
+  "builtin-baseline": "c93f37f1b1d20963ceab60bcd78b946af902ffe9"
+}
