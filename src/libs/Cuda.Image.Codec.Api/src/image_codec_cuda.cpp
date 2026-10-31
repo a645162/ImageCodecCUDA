@@ -4,6 +4,8 @@
 // 具体实现全部在各自模块里，避免这里长成第二个 codec。
 #include "ImageCodecCUDA/image_codec_cuda.h"
 
+#include <algorithm>
+#include <cctype>
 #include <cstdlib>
 #include <cstring>
 #include <new>
@@ -66,6 +68,72 @@ void applyDefaults(image_codec_cuda_encode_params *p) {
   if (p->tiff_compression == 0) p->tiff_compression = 5;
   if (p->png_compression == 0) p->png_compression = 6;
   if (p->png_filter == 0) p->png_filter = -1;
+}
+
+} // namespace
+
+// 下面这些辅助函数必须放在 extern "C" 之外：C 语言链接的符号没有名字修饰，
+// 放在 extern "C" 里的匿名命名空间并**不会**变成内部链接（GCC 实测会导出
+// `T metricArgsValid`），两个后端的 C API 一起链接时就会在链接期撞车。
+namespace {
+
+// C 图像 -> 内部 ImageBuffer。**这一步必然复制整幅图**：C ABI 的 image 由调用方
+// malloc、没有 stride 概念，而内部需要 vector 所有权。大图上这是 1.9 GB 级别的
+// 拷贝，所以调参（Tune）走内部 C++ 入口而不是 C API——那里的计时不该被它污染。
+bool toBufferPair(const image_codec_cuda_image *a,
+                  const image_codec_cuda_image *b, ImageBuffer *buf_a,
+                  ImageBuffer *buf_b) {
+  const auto copy = [](const image_codec_cuda_image *img, ImageBuffer *out) {
+    out->width = static_cast<int>(img->width);
+    out->height = static_cast<int>(img->height);
+    out->channels = static_cast<int>(img->channels);
+    out->data.assign(img->data, img->data + img->data_size);
+    return out->valid();
+  };
+  return copy(a, buf_a) && copy(b, buf_b);
+}
+
+// 失败原因 -> 状态码。
+//
+// 为什么要分类：C API 只回状态码（与 ImageCodecOpenCL 对齐），而「这个失败该不该
+// 让上层换一个后端」取决于原因。规则只有三条：
+//   * 资源不足（显存预算/设备空闲显存、nvJPEG 内部 allocator failure）→ OutOfMemory：
+//     CPU 后端用内存就能顶上，回退是对的（例：超大图 4:4:4 编码 nvJPEG 内部缓冲分配失败）；
+//   * nvJPEG 说 not supported / not available（渐进式、16bit、缺 nvJPEG 组件）→
+//     UnsupportedFormat：别的解码器可能能读；
+//   * 其余 → DecodeFailed/EncodeFailed：真正的失败，不允许被别的后端悄悄救回来。
+image_codec_cuda_status classifyFailure(const image_codec_cuda_codec *codec,
+                                        const std::string &err, bool encoding) {
+  if (codec->budget.exhausted()) {
+    return IMAGE_CODEC_CUDA_ERR_OUT_OF_MEMORY;
+  }
+
+  std::string lower = err;
+  std::transform(lower.begin(), lower.end(), lower.begin(), [](char c) {
+    return static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+  });
+
+  // nvJPEG 的内部分配失败：错误文本是它自己的 nvjpegText 映射，字符串稳定。
+  if (lower.find("allocator failure") != std::string::npos) {
+    return IMAGE_CODEC_CUDA_ERR_OUT_OF_MEMORY;
+  }
+  if (lower.find("nvjpeg") != std::string::npos &&
+      (lower.find("not supported") != std::string::npos ||
+       lower.find("not available") != std::string::npos)) {
+    return IMAGE_CODEC_CUDA_ERR_UNSUPPORTED_FORMAT;
+  }
+  return encoding ? IMAGE_CODEC_CUDA_ERR_ENCODE_FAILED
+                  : IMAGE_CODEC_CUDA_ERR_DECODE_FAILED;
+}
+
+bool metricArgsValid(const image_codec_cuda_codec *codec,
+                     const image_codec_cuda_image *a,
+                     const image_codec_cuda_image *b) {
+  if (codec == nullptr || a == nullptr || b == nullptr) return false;
+  if (a->data == nullptr || b->data == nullptr) return false;
+  if (a->width == 0 || a->height == 0 || a->channels == 0) return false;
+  return a->width == b->width && a->height == b->height &&
+         a->channels == b->channels;
 }
 
 } // namespace
@@ -237,6 +305,9 @@ image_codec_cuda_status image_codec_cuda_decode(image_codec_cuda_codec *codec,
   if (fmt == IMAGE_CODEC_CUDA_FORMAT_UNKNOWN) {
     image_codec_cuda_probe(in, in_len, &fmt);
   }
+  // 先清掉上一轮可能留下的「内存不足」结论：这一轮的失败原因只能由这一轮决定。
+  codec->budget.takeExhausted();
+
   const auto *bytes = static_cast<const uint8_t *>(in);
   ImageBuffer img;
   std::string err;
@@ -256,9 +327,7 @@ image_codec_cuda_status image_codec_cuda_decode(image_codec_cuda_codec *codec,
     return IMAGE_CODEC_CUDA_ERR_UNSUPPORTED_FORMAT;
   }
   if (!ok) {
-    return err.find("nvJPEG") != std::string::npos
-               ? IMAGE_CODEC_CUDA_ERR_UNSUPPORTED_FORMAT
-               : IMAGE_CODEC_CUDA_ERR_DECODE_FAILED;
+    return classifyFailure(codec, err, /*encoding=*/false);
   }
   return exportImage(img, out);
 }
@@ -287,6 +356,9 @@ image_codec_cuda_encode(image_codec_cuda_codec *codec, int format,
     p = *params;
   }
   applyDefaults(&p);
+
+  // 同上：上一轮的内存结论不能算到这一轮头上。
+  codec->budget.takeExhausted();
 
   std::vector<uint8_t> encoded;
   std::string err;
@@ -324,9 +396,7 @@ image_codec_cuda_encode(image_codec_cuda_codec *codec, int format,
     return IMAGE_CODEC_CUDA_ERR_UNSUPPORTED_FORMAT;
   }
   if (!ok) {
-    return err.find("nvJPEG") != std::string::npos
-               ? IMAGE_CODEC_CUDA_ERR_UNSUPPORTED_FORMAT
-               : IMAGE_CODEC_CUDA_ERR_ENCODE_FAILED;
+    return classifyFailure(codec, err, /*encoding=*/true);
   }
 
   *out_len = encoded.size();
@@ -340,36 +410,6 @@ image_codec_cuda_encode(image_codec_cuda_codec *codec, int format,
   std::memcpy(out, encoded.data(), encoded.size());
   return IMAGE_CODEC_CUDA_OK;
 }
-
-namespace {
-
-// C 图像 -> 内部 ImageBuffer。**这一步必然复制整幅图**：C ABI 的 image 由调用方
-// malloc、没有 stride 概念，而内部需要 vector 所有权。大图上这是 1.9 GB 级别的
-// 拷贝，所以调参（Tune）走内部 C++ 入口而不是 C API——那里的计时不该被它污染。
-bool toBufferPair(const image_codec_cuda_image *a,
-                  const image_codec_cuda_image *b, ImageBuffer *buf_a,
-                  ImageBuffer *buf_b) {
-  const auto copy = [](const image_codec_cuda_image *img, ImageBuffer *out) {
-    out->width = static_cast<int>(img->width);
-    out->height = static_cast<int>(img->height);
-    out->channels = static_cast<int>(img->channels);
-    out->data.assign(img->data, img->data + img->data_size);
-    return out->valid();
-  };
-  return copy(a, buf_a) && copy(b, buf_b);
-}
-
-bool metricArgsValid(const image_codec_cuda_codec *codec,
-                     const image_codec_cuda_image *a,
-                     const image_codec_cuda_image *b) {
-  if (codec == nullptr || a == nullptr || b == nullptr) return false;
-  if (a->data == nullptr || b->data == nullptr) return false;
-  if (a->width == 0 || a->height == 0 || a->channels == 0) return false;
-  return a->width == b->width && a->height == b->height &&
-         a->channels == b->channels;
-}
-
-} // namespace
 
 // 注意：下面三个入口都会把 C 结构体复制成 ImageBuffer（见 toBufferPair 的注释），
 // 失败时也只返回状态码——C API 与 ImageCodecOpenCL 一样不带错误字符串。需要
@@ -389,9 +429,14 @@ image_codec_cuda_status image_codec_cuda_metric_mse(
   image_codec::cuda::metrics::Options opt;
   opt.device_index = codec->device_index;
   opt.memory_limit = codec->budget.limit();
+  // 共享句柄的显存记账，失败后才能区分「撞上限」与「算错了」。
+  opt.budget = &codec->budget;
+  codec->budget.takeExhausted();
+
   std::string err;
   if (!image_codec::cuda::metrics::mse(buf_a, buf_b, opt, out_value, &err)) {
-    return IMAGE_CODEC_CUDA_ERR_INTERNAL;
+    return codec->budget.exhausted() ? IMAGE_CODEC_CUDA_ERR_OUT_OF_MEMORY
+                                     : IMAGE_CODEC_CUDA_ERR_INTERNAL;
   }
   return IMAGE_CODEC_CUDA_OK;
 }
@@ -410,9 +455,13 @@ image_codec_cuda_status image_codec_cuda_metric_psnr(
   image_codec::cuda::metrics::Options opt;
   opt.device_index = codec->device_index;
   opt.memory_limit = codec->budget.limit();
+  opt.budget = &codec->budget;
+  codec->budget.takeExhausted();
+
   std::string err;
   if (!image_codec::cuda::metrics::psnr(buf_a, buf_b, opt, out_value, &err)) {
-    return IMAGE_CODEC_CUDA_ERR_INTERNAL;
+    return codec->budget.exhausted() ? IMAGE_CODEC_CUDA_ERR_OUT_OF_MEMORY
+                                     : IMAGE_CODEC_CUDA_ERR_INTERNAL;
   }
   return IMAGE_CODEC_CUDA_OK;
 }
@@ -432,10 +481,14 @@ image_codec_cuda_status image_codec_cuda_metric_ssim(
   image_codec::cuda::metrics::Options opt;
   opt.device_index = codec->device_index;
   opt.memory_limit = codec->budget.limit();
+  opt.budget = &codec->budget;
+  codec->budget.takeExhausted();
+
   image_codec::cuda::metrics::SsimResult r;
   std::string err;
   if (!image_codec::cuda::metrics::ssim(buf_a, buf_b, opt, &r, &err)) {
-    return IMAGE_CODEC_CUDA_ERR_INTERNAL;
+    return codec->budget.exhausted() ? IMAGE_CODEC_CUDA_ERR_OUT_OF_MEMORY
+                                     : IMAGE_CODEC_CUDA_ERR_INTERNAL;
   }
   out->ssim = r.ssim;
   out->ms_ssim = r.ms_ssim;
