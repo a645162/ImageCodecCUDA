@@ -211,6 +211,49 @@ void testJpeg() {
   check(psnr > 32.0, "jpeg psnr > 32 dB");
 }
 
+// 灰度 JPEG：1 通道进、1 通道出。
+//
+// 这条单独测，是因为 nvJPEG 的编码输入只接受 3 通道：只要忘了把采样因子设成
+// CSS_GRAY，就会得到一张三分量 JPEG，解回来变 3 通道 —— 压缩比、体积、上层
+// 的通道判断全部跟着错，而肉眼几乎看不出来。
+void testJpegGray() {
+  if (!image_codec::cuda::jpeg::available()) {
+    std::printf("SKIP: nvJPEG 不可用\n");
+    return;
+  }
+  const ImageBuffer img = makeImage(97, 71, 1);
+  std::vector<uint8_t> bytes;
+  std::string err;
+  if (!image_codec::cuda::jpeg::encode(0, img, 95, 0, &bytes, &err)) {
+    std::fprintf(stderr, "FAIL: gray jpeg encode (%s)\n", err.c_str());
+    ++g_failures;
+    return;
+  }
+
+  ImageBuffer back;
+  if (!image_codec::cuda::jpeg::decode(0, bytes.data(), bytes.size(), &back,
+                                       &err)) {
+    std::fprintf(stderr, "FAIL: gray jpeg decode (%s)\n", err.c_str());
+    ++g_failures;
+    return;
+  }
+  check(back.width == img.width && back.height == img.height,
+        "gray jpeg dimensions");
+  check(back.channels == 1, "gray jpeg stays 1 channel");
+
+  if (back.channels != 1) return;
+  double se = 0;
+  const size_t n = static_cast<size_t>(img.width) * img.height;
+  for (size_t i = 0; i < n; ++i) {
+    const double d = static_cast<double>(img.data[i]) - back.data[i];
+    se += d * d;
+  }
+  const double mse = se / static_cast<double>(n);
+  const double psnr = mse <= 0 ? 99.0 : 10.0 * std::log10(255.0 * 255.0 / mse);
+  std::printf("gray jpeg q95 psnr = %.2f dB, %zu bytes\n", psnr, bytes.size());
+  check(psnr > 32.0, "gray jpeg psnr > 32 dB");
+}
+
 // 画质指标：GPU 与 CPU 参考实现必须给出同一个数字。
 //
 // 这里刻意用「小 band」（band_rows = 16）跑一遍：band 越小，halo 行复制与
@@ -406,6 +449,7 @@ int main() {
   testPng(4);
   testPng(1);
   testJpeg();
+  testJpegGray();
   testMetricsSuite();
   testMetricsAnalytic();
   testPngDeterminism();

@@ -24,14 +24,17 @@ namespace jpeg {
 // 本编译单元是否链接了 nvJPEG。
 bool available();
 
-// 解码为 RGB（3 通道）。灰度 JPEG 也按 RGB 复制返回（与 ImageViewer 的
-// 3 通道内存约定一致，且不引入有损的颜色空间转换）。
+// 解码。彩色 JPEG 返回 3 通道（RGB）；灰度 JPEG（单分量 / CSS_GRAY）返回
+// 1 通道 —— 通道保真是硬约束，不能把灰度悄悄展开成三份相同的值。
 // budget 非空时，解码所需的设备缓冲（pitch 对齐的整幅图）先记账，超限即失败。
 bool decode(int device_index, const uint8_t *data, size_t size,
             ImageBuffer *out, std::string *err, MemoryBudget *budget = nullptr);
 
 // 编码。quality 1..100；subsampling: 0=按质量自动（>=92 → 444，否则 420），
-// 否则 444 / 422 / 420。channels 支持 3（RGB）与 1（灰度，转 RGB 编码）。
+// 否则 444 / 422 / 420。channels 支持 3（RGB）与 1（灰度）。
+//
+// 灰度特殊处理：nvJPEG 没有单通道编码输入，宿主侧要复制成 R=G=B 再送进去，
+// 并把采样因子强制成 CSS_GRAY —— 只有这样输出才是 1 分量 JPEG。
 bool encode(int device_index, const ImageBuffer &img, int quality,
             int subsampling, std::vector<uint8_t> *out, std::string *err,
             MemoryBudget *budget = nullptr);

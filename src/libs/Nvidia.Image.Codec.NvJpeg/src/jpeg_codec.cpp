@@ -126,23 +126,33 @@ bool decode(int device_index, const uint8_t *data, size_t size,
   const int w = widths[0];
   const int h = heights[0];
 
+  // 灰度 JPEG（单分量或 CSS_GRAY）必须按 1 通道输出。nvJPEG 的 RGBI 输出会把
+  // 灰度展开成三份相同的值，于是同一张灰度图走 CPU 是 1 通道、走 CUDA 变 3 通道。
+  // 通道保真是硬约束：上层据此判断「体积/通道数为什么变了」，不能靠猜。
+  const bool gray = ncomp == 1 || css == NVJPEG_CSS_GRAY;
+  const int out_channels = gray ? 1 : 3;
+  const nvjpegOutputFormat_t out_format =
+      gray ? NVJPEG_OUTPUT_Y : NVJPEG_OUTPUT_RGBI;
+  const size_t row_bytes =
+      static_cast<size_t>(w) * static_cast<size_t>(out_channels);
+
   nvjpegJpegState_t state = nullptr;
   ICUDA_NVJPEG_OK(nvjpegJpegStateCreate(nv.handle, &state),
                   "nvjpegJpegStateCreate");
 
-  // RGBI：单缓冲交错 RGB，pitch 由 cudaMallocPitch 决定（满足 nvJPEG 对齐要求）。
+  // 单缓冲（灰度 = Y 平面，彩色 = 交错 RGB），pitch 由 cudaMallocPitch 决定
+  // （满足 nvJPEG 的对齐要求）。
   void *buf = nullptr;
   size_t pitch = 0;
-  // 显存记账：解码缓冲是整幅图（pitch 对齐后可能比 w*h*3 大一截），
+  // 显存记账：解码缓冲是整幅图（pitch 对齐后可能比 w*h*c 大一截），
   // 大图必须能被上限挡住而不是直接 OOM。
-  const size_t decode_bytes =
-      static_cast<size_t>(w) * 3 * static_cast<size_t>(h);
+  const size_t decode_bytes = row_bytes * static_cast<size_t>(h);
   if (budget != nullptr && !budget->reserve(decode_bytes, err)) {
     (void)nvjpegJpegStateDestroy(state);
     return false;
   }
-  if (!check(cudaMallocPitch(&buf, &pitch, static_cast<size_t>(w) * 3, h),
-             "cudaMallocPitch", err)) {
+  if (!check(cudaMallocPitch(&buf, &pitch, row_bytes, h), "cudaMallocPitch",
+             err)) {
     if (budget != nullptr) budget->release(decode_bytes);
     (void)nvjpegJpegStateDestroy(state);
     return false;
@@ -151,8 +161,8 @@ bool decode(int device_index, const uint8_t *data, size_t size,
   dst.channel[0] = static_cast<unsigned char *>(buf);
   dst.pitch[0] = pitch;
 
-  const nvjpegStatus_t st = nvjpegDecode(
-      nv.handle, state, data, size, NVJPEG_OUTPUT_RGBI, &dst, dev.stream());
+  const nvjpegStatus_t st = nvjpegDecode(nv.handle, state, data, size,
+                                         out_format, &dst, dev.stream());
   if (st != NVJPEG_STATUS_SUCCESS) {
     if (err != nullptr) *err = std::string("nvjpegDecode: ") + nvjpegText(st);
     (void)cudaFree(buf);
@@ -167,7 +177,7 @@ bool decode(int device_index, const uint8_t *data, size_t size,
     return false;
   }
 
-  if (!out->allocate(w, h, 3)) {
+  if (!out->allocate(w, h, out_channels)) {
     if (err != nullptr) *err = "JPEG: allocation failed";
     (void)cudaFree(buf);
     if (budget != nullptr) budget->release(decode_bytes);
@@ -176,7 +186,6 @@ bool decode(int device_index, const uint8_t *data, size_t size,
   }
   // 逐行拷贝以吃掉 pitch padding。必须走 dev.stream()：那是一非阻塞流，
   // 与 legacy default stream 之间没有隐式顺序，用 cudaMemcpy 会读到旧数据。
-  const size_t row_bytes = static_cast<size_t>(w) * 3;
   for (int y = 0; y < h; ++y) {
     if (!check(cudaMemcpyAsync(out->data.data() +
                                    static_cast<size_t>(y) * row_bytes,
@@ -229,6 +238,13 @@ bool encode(int device_index, const ImageBuffer &img, int quality,
   const int q = std::clamp(quality, 1, 100);
   const int css = subsampling == 0 ? (q >= 92 ? 444 : 420) : subsampling;
 
+  // 灰度输入：nvJPEG 的编码输入只接受 3 通道（RGB/BGR/RGBI/BGRI），没有
+  // 单通道枚举（实测 NVJPEG_INPUT_YUV + CSS_GRAY 一律返回 invalid parameter），
+  // 因此宿主侧把灰度复制成 R=G=B 再喂进去；关键是**采样因子必须设成 CSS_GRAY**。
+  // 只要求“输出 1 通道”而输入仍是 4:2:0，得到的就是一张三分量 JPEG，解回来
+  // 必然 3 通道 —— 通道保真就没了。设对之后 getImageInfo 报 ncomp=1、css=GRAY。
+  const bool gray = img.channels == 1;
+
   Device dev;
   if (!dev.init(device_index, err)) {
     return false;
@@ -250,35 +266,38 @@ bool encode(int device_index, const ImageBuffer &img, int quality,
 
   ICUDA_NVJPEG_OK(nvjpegEncoderParamsSetQuality(params, q, dev.stream()),
                   "nvjpegEncoderParamsSetQuality");
-  ICUDA_NVJPEG_OK(nvjpegEncoderParamsSetSamplingFactors(
-                      params, toNvjpegCss(css), dev.stream()),
-                  "nvjpegEncoderParamsSetSamplingFactors");
+  ICUDA_NVJPEG_OK(
+      nvjpegEncoderParamsSetSamplingFactors(
+          params, gray ? NVJPEG_CSS_GRAY : toNvjpegCss(css), dev.stream()),
+      "nvjpegEncoderParamsSetSamplingFactors");
 
-  // 灰度输入先展开成 RGB（nvJPEG 的 RGBI 输入不接受 1 通道）。
-  std::vector<uint8_t> rgb_staging;
-  const uint8_t *rgb = img.data.data();
-  if (img.channels == 1) {
-    rgb_staging.resize(static_cast<size_t>(img.width) * img.height * 3);
+  // 灰度：复制成 R=G=B 的交错 RGB（见上面的采样因子说明）。R、G、B 相等时
+  // 亮度 Y = 0.299R + 0.587G + 0.114B 恰好等于 R，不引入额外色偏。
+  std::vector<uint8_t> gray_staging;
+  const uint8_t *src_plane = img.data.data();
+  if (gray) {
     const size_t n = static_cast<size_t>(img.width) * img.height;
+    gray_staging.resize(n * 3);
     for (size_t i = 0; i < n; ++i) {
       const uint8_t v = img.data[i];
-      rgb_staging[i * 3 + 0] = v;
-      rgb_staging[i * 3 + 1] = v;
-      rgb_staging[i * 3 + 2] = v;
+      gray_staging[i * 3 + 0] = v;
+      gray_staging[i * 3 + 1] = v;
+      gray_staging[i * 3 + 2] = v;
     }
-    rgb = rgb_staging.data();
+    src_plane = gray_staging.data();
   }
+
+  // 设备侧始终是交错 RGB（nvJPEG 编码输入的唯一可用形态）。
+  const size_t row_bytes = static_cast<size_t>(img.width) * 3;
 
   void *devbuf = nullptr;
   size_t pitch = 0;
-  const size_t encode_bytes =
-      static_cast<size_t>(img.width) * 3 * static_cast<size_t>(img.height);
+  const size_t encode_bytes = row_bytes * static_cast<size_t>(img.height);
   if (budget != nullptr && !budget->reserve(encode_bytes, err)) {
     cleanup();
     return false;
   }
-  if (!check(cudaMallocPitch(&devbuf, &pitch,
-                             static_cast<size_t>(img.width) * 3, img.height),
+  if (!check(cudaMallocPitch(&devbuf, &pitch, row_bytes, img.height),
              "cudaMallocPitch", err)) {
     if (budget != nullptr) budget->release(encode_bytes);
     cleanup();
@@ -286,13 +305,11 @@ bool encode(int device_index, const ImageBuffer &img, int quality,
   }
   bool ok = true;
   for (int y = 0; y < img.height && ok; ++y) {
-    ok = check(
-        cudaMemcpyAsync(
-            static_cast<uint8_t *>(devbuf) + static_cast<size_t>(y) * pitch,
-            rgb + static_cast<size_t>(y) * static_cast<size_t>(img.width) * 3,
-            static_cast<size_t>(img.width) * 3, cudaMemcpyHostToDevice,
-            dev.stream()),
-        "cudaMemcpyAsync H2D (jpeg rows)", err);
+    ok = check(cudaMemcpyAsync(static_cast<uint8_t *>(devbuf) +
+                                   static_cast<size_t>(y) * pitch,
+                               src_plane + static_cast<size_t>(y) * row_bytes,
+                               row_bytes, cudaMemcpyHostToDevice, dev.stream()),
+               "cudaMemcpyAsync H2D (jpeg rows)", err);
   }
   if (!ok) {
     (void)cudaFree(devbuf);
