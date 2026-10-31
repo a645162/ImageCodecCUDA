@@ -78,6 +78,15 @@ int encode(const uint8_t *in, size_t in_size, std::vector<uint8_t> &out) {
       }
     }
     putBits(out, bitbuf, nbits, prefix, width);
+    // 最后一个数据码之后补一次「假想建表」的宽度记账：解码器读到最后一个码
+    // 仍会建一条（下一条才用得到的）条目；若这次建表正好跨过 512/1024/2048，
+    // 它会按更宽的码读 EOI，编码器不补这一步就会位流错位（缺 EOI / 多解字节）。
+    if (next_code < 4096) {
+      next_code++;
+      if (next_code == 512) width = 10;
+      else if (next_code == 1024) width = 11;
+      else if (next_code == 2048) width = 12;
+    }
   }
   putBits(out, bitbuf, nbits, kEoi, width);
   if (nbits > 0) {
