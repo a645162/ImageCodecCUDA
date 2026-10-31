@@ -1,11 +1,11 @@
 # 对外稳定 C API（include/ImageCodecCUDA/image_codec_cuda.h）实现库。
 add_library(Cuda.Image.Codec.Api STATIC
   src/image_codec_cuda.cpp
-  "${CMAKE_SOURCE_DIR}/include/ImageCodecCUDA/image_codec_cuda.h"
-  "${CMAKE_SOURCE_DIR}/include/ImageCodecCUDA/image_codec_cuda.hpp")
+  "${PROJECT_SOURCE_DIR}/include/ImageCodecCUDA/image_codec_cuda.h"
+  "${PROJECT_SOURCE_DIR}/include/ImageCodecCUDA/image_codec_cuda.hpp")
 
 target_include_directories(Cuda.Image.Codec.Api PUBLIC
-  "${CMAKE_SOURCE_DIR}/include")
+  "${PROJECT_SOURCE_DIR}/include")
 
 target_link_libraries(Cuda.Image.Codec.Api PUBLIC
   ImageCodecCUDA::Core
