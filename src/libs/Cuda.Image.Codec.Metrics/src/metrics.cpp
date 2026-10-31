@@ -173,7 +173,9 @@ bool mse(const ImageBuffer &a, const ImageBuffer &b, const Options &options,
     if (err != nullptr) *err = "metrics: " + local_err;
     return false;
   }
-  MemoryBudget budget;
+  MemoryBudget local_budget;
+  MemoryBudget &budget =
+      options.budget != nullptr ? *options.budget : local_budget;
   budget.bindDevice(options.device_index);
   budget.setLimit(options.memory_limit);
 
@@ -223,7 +225,9 @@ bool ssim(const ImageBuffer &a, const ImageBuffer &b, const Options &options,
     if (err != nullptr) *err = "metrics: " + local_err;
     return false;
   }
-  MemoryBudget budget;
+  MemoryBudget local_budget;
+  MemoryBudget &budget =
+      options.budget != nullptr ? *options.budget : local_budget;
   budget.bindDevice(options.device_index);
   budget.setLimit(options.memory_limit);
 

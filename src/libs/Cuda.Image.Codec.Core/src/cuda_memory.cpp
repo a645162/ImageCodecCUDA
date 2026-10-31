@@ -72,6 +72,7 @@ bool MemoryBudget::reserve(size_t bytes, std::string *err) {
   const size_t available =
       limit_ == 0 ? 0 : (used_ >= limit_ ? 0 : limit_ - used_);
   if (limit_ != 0 && bytes > available) {
+    exhausted_ = true;
     if (err != nullptr) {
       *err = "显存预算不足: 需要 " + std::to_string(bytes) + " 字节, 上限 " +
              std::to_string(limit_) + " 字节, 已用 " + std::to_string(used_) +
@@ -85,6 +86,7 @@ bool MemoryBudget::reserve(size_t bytes, std::string *err) {
     std::string probe_err;
     if (queryDeviceMemory(device_index_, &info, &probe_err) &&
         bytes > info.free_bytes) {
+      exhausted_ = true;
       if (err != nullptr) {
         *err = "设备空闲显存不足: 需要 " + std::to_string(bytes) +
                " 字节, 空闲 " + std::to_string(info.free_bytes) + " 字节";
@@ -95,6 +97,18 @@ bool MemoryBudget::reserve(size_t bytes, std::string *err) {
   used_ += bytes;
   if (used_ > peak_) peak_ = used_;
   return true;
+}
+
+bool MemoryBudget::exhausted() const {
+  std::lock_guard<std::mutex> lock(mu_);
+  return exhausted_;
+}
+
+bool MemoryBudget::takeExhausted() {
+  std::lock_guard<std::mutex> lock(mu_);
+  const bool value = exhausted_;
+  exhausted_ = false;
+  return value;
 }
 
 void MemoryBudget::release(size_t bytes) {

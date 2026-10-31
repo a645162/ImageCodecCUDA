@@ -50,6 +50,11 @@ struct Options {
   // 无关，只与（band_rows + 窗高）* 行字节数有关。
   size_t memory_limit = 0;
 
+  // 可选的显存记账对象。留空时每次调用临时建一个；由调用方提供时复用它，
+  // 于是调用失败后可以直接问「是不是撞到上限了」（MemoryBudget::exhausted），
+  // 而不必去匹配错误字符串。提供时仍按上面的 memory_limit 设置它的上限。
+  MemoryBudget *budget = nullptr;
+
   // 每次上传的行数。显存紧张时调小；太小会让 kernel 启动开销占比上升。
   int band_rows = 256;
 

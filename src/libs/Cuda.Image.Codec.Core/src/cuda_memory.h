@@ -59,6 +59,16 @@ public:
   // 归还 bytes（必须与成功的 reserve 一一对应）。
   void release(size_t bytes);
 
+  // 上一次 reserve() 是否因「预算/设备空闲显存不足」失败。
+  //
+  // 存在的意义：调用方（C API）要区分「这台设备的资源不够」与「图真的编坏了」。
+  // 前者换个后端还有救，后者换个后端只会把 bug 藏起来。只在 reserve() 里能
+  // 得到的知识，就不要让上层去猜错误字符串。
+  bool exhausted() const;
+
+  // 读取并清除（调用方在每次操作前先清一次，避免读到上一次的结论）。
+  bool takeExhausted();
+
 private:
   // 设备空闲显存的提前校验只对「够大」的分配做：小额分配（几千字节）
   // 每次都问驱动是纯浪费，真正的 OOM 风险都在大块上。
@@ -69,6 +79,7 @@ private:
   size_t used_ = 0;
   size_t peak_ = 0;
   int device_index_ = -1;
+  bool exhausted_ = false;
 };
 
 } // namespace cuda
