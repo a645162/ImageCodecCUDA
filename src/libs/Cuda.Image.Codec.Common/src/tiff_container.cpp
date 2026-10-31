@@ -1,7 +1,9 @@
 // tiff_container.cpp - TIFF 6.0 容器读写实现（内存语义）。
 #include "tiff_container.h"
 
+#include <algorithm>
 #include <cstring>
+#include <vector>
 
 namespace image_codec {
 namespace cuda {
@@ -330,12 +332,22 @@ void TiffWriter::build() {
   putU16(e, static_cast<uint16_t>(n_tags));
   e += 2;
 
-  auto entry = [&](uint16_t tag, uint16_t type, uint32_t count, uint32_t val) {
-    putU16(e, tag);
-    putU16(e + 2, type);
-    putU32(e + 4, count);
-    putU32(e + 8, val);
-    e += 12;
+  // 先攒下来再排序写出：TIFF 规范要求 IFD 条目按 tag 升序，libtiff 对非升序
+  // 会打 "tags are not sorted in ascending order" 警告。之前 strip 布局把
+  // 273/278/279 写在 284 之后（tiled 恰好是升序，所以只有 strip 出问题）——
+  // 主流解码器仍能读，但一个自己写出来的文件不该带着规范违背。
+  struct IfdEntry {
+    uint16_t tag = 0;
+    uint16_t type = 0;
+    uint32_t count = 0;
+    uint32_t value = 0;
+  };
+  std::vector<IfdEntry> entries;
+  entries.reserve(n_tags + 1);
+
+  auto entry = [&entries](uint16_t tag, uint16_t type, uint32_t count,
+                          uint32_t val) {
+    entries.push_back(IfdEntry{tag, type, count, val});
   };
 
   // count==1 的 LONG/SHORT 必须把值直接写进 Value 字段；只有 count>1 时
@@ -371,6 +383,16 @@ void TiffWriter::build() {
     entry(kTagTileByteCounts, kTypeLong, static_cast<uint32_t>(n_),
           strip_counts_val);
   }
+  std::sort(entries.begin(), entries.end(),
+            [](const IfdEntry &a, const IfdEntry &b) { return a.tag < b.tag; });
+  for (const IfdEntry &item : entries) {
+    putU16(e, item.tag);
+    putU16(e + 2, item.type);
+    putU32(e + 4, item.count);
+    putU32(e + 8, item.value);
+    e += 12;
+  }
+
   putU32(e, 0); // next IFD
 
   for (int k = 0; k < spp; ++k) {
