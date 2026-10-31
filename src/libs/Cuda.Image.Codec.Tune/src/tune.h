@@ -1,3 +1,11 @@
+/*
+ * File: tune.h
+ * Brief: Tune.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // tune.h - 参数扫描（Tune）库：在自己的硬件上找到最优编码参数。
 //
 // 为什么单独做一个库而不是把循环塞进 CLI：GPU 参数（tile 大小、每批单元数、

@@ -1,3 +1,11 @@
+/*
+ * File: cuda_buffer.h
+ * Brief: Cuda buffer.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // cuda_buffer.h - 设备内存 RAII 缓冲。
 //
 // 只做「设备内存」一件事：不做 host<->device 拷贝策略决策。

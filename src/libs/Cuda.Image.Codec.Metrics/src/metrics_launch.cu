@@ -1,3 +1,11 @@
+/*
+ * File: metrics_launch.cu
+ * Brief: Metrics launch.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // metrics_launch.cu - 绑定指标 kernel 的启动参数。
 #include "metrics_launch.h"
 

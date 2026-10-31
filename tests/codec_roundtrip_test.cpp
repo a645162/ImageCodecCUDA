@@ -1,3 +1,11 @@
+/*
+ * File: codec_roundtrip_test.cpp
+ * Brief: Codec roundtrip test.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // tests/codec_roundtrip_test.cpp - ImageCodecCUDA 自检。
 //
 // 覆盖的不是「能跑通」，而是后端最容易悄悄错的三件事：

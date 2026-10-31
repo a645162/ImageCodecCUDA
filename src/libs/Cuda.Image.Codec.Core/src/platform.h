@@ -1,3 +1,11 @@
+/*
+ * File: platform.h
+ * Brief: Platform.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // platform.h - 与 GPU 无关的宿主侧小工具（计时、休眠）。
 //
 // 与 ImageCodecPlatform 的 image_codec_* 平台抽象刻意重名区隔：本库是被 add_subdirectory

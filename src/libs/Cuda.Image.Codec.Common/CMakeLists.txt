@@ -1,3 +1,9 @@
+# File: src/libs/Cuda.Image.Codec.Common/CMakeLists.txt
+# Brief: CMake build configuration.
+# Author: Haomin Kong
+# Email: a645162@163.com
+# Created: 2026-10-31
+
 # 容器与像素的宿主侧实现（与 GPU 无关，可被任意后端复用）：
 #   * image_buffer  —— 统一图像缓冲
 #   * bmp_io        —— CLI/测试用 24-bit BMP

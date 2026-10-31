@@ -1,3 +1,9 @@
+# File: src/libs/Cuda.Image.Codec.Tune/CMakeLists.txt
+# Brief: CMake build configuration.
+# Author: Haomin Kong
+# Email: a645162@163.com
+# Created: 2026-10-31
+
 # 参数扫描库：在自己的硬件上找到最优编码参数（tile / 批大小 / block 线程 / 滤波策略）。
 #
 # 只依赖各 codec 模块的 C++ 入口（不经过 C API），因此测量的是编码本身，

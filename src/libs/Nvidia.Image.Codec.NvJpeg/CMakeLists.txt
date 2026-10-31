@@ -1,3 +1,9 @@
+# File: src/libs/Nvidia.Image.Codec.NvJpeg/CMakeLists.txt
+# Brief: CMake build configuration.
+# Author: Haomin Kong
+# Email: a645162@163.com
+# Created: 2026-10-31
+
 # Nvidia.Image.Codec.NvJpeg —— NVIDIA 固定功能硬件编解码（NVJPG）封装。
 #
 # 与 ImageCodecPlatform 的分工：Intel 的 oneVPL/QuickSync 是另一家厂商的硬件路径，

@@ -1,3 +1,11 @@
+/*
+ * File: metrics_launch.h
+ * Brief: Metrics launch.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // metrics_launch.h - 指标 kernel 的启动入口（.cpp 侧不写 __global__ 语法）。
 #pragma once
 

@@ -1,3 +1,11 @@
+/*
+ * File: cuda_memory.h
+ * Brief: Cuda memory.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // cuda_memory.h - 显存查询与「显存上限」记账。
 //
 // 为什么需要单独的显存记账而不是直接看 cudaMemGetInfo：

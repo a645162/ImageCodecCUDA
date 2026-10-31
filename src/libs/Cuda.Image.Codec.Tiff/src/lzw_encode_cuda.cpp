@@ -1,3 +1,11 @@
+/*
+ * File: lzw_encode_cuda.cpp
+ * Brief: Lzw encode cuda.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // lzw_encode_cuda.cpp - TIFF LZW CUDA 编码器实现。
 #include "lzw_encode_cuda.h"
 

@@ -1,3 +1,11 @@
+/*
+ * File: png_codec.cpp
+ * Brief: Png codec.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // png_codec.cpp - PNG 编解码门面实现。
 #include "png_codec.h"
 

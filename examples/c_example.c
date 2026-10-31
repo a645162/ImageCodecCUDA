@@ -1,3 +1,11 @@
+/*
+ * File: c_example.c
+ * Brief: C example.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // c_example.c - 纯 C 调用示例：TIFF -> PNG 转码（全部走内存）。
 //
 // 构建：cmake --build build --target icu_c_example

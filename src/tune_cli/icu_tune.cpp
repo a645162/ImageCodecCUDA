@@ -1,3 +1,11 @@
+/*
+ * File: icu_tune.cpp
+ * Brief: Icu tune.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // icu_tune.cpp - 参数扫描 CLI（ImageCodecCUDA::Tune 的薄壳）。
 //
 // 典型用法：

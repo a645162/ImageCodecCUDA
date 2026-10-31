@@ -1,3 +1,11 @@
+/*
+ * File: image_buffer.h
+ * Brief: Image buffer.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // image_buffer.h - 宿主侧图像缓冲（top-down，1/2/3/4 通道）。
 //
 // 与主项目 ImageViewer 的约定一致：行序 top-down，第 0 行是图像顶部；

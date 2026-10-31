@@ -1,3 +1,11 @@
+/*
+ * File: tiff_codec.cpp
+ * Brief: Tiff codec.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // tiff_codec.cpp - TIFF 编解码实现。
 #include "tiff_codec.h"
 

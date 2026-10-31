@@ -1,3 +1,11 @@
+/*
+ * File: image_codec_cuda.h
+ * Brief: Image codec cuda.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // image_codec_cuda.h - ImageCodecCUDA 对外 C API（纯 C，C11）。
 //
 // 用法：

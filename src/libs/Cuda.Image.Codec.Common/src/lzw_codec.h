@@ -1,3 +1,11 @@
+/*
+ * File: lzw_codec.h
+ * Brief: Lzw codec.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // lzw_codec.h - TIFF LZW 的 CPU 参考实现（编码 + 解码）。
 //
 // 语义与 libtiff 对齐：

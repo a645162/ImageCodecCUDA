@@ -1,3 +1,11 @@
+/*
+ * File: lzw_encode_launch.cu
+ * Brief: Lzw encode launch.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // lzw_encode_launch.cu - 绑定 kernel 启动参数（host 侧薄封装）。
 #include "lzw_encode_launch.h"
 

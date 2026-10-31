@@ -1,3 +1,11 @@
+/*
+ * File: metrics_cpu.cpp
+ * Brief: Metrics cpu.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // metrics_cpu.cpp - MSE / SSIM / MS-SSIM 的 CPU 参考实现。
 //
 // 存在的意义不是「CPU 更快」，而是给 GPU kernel 一个可以逐项对拍的基准：

@@ -1,3 +1,11 @@
+/*
+ * File: main.cpp
+ * Brief: Main.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // src/cli/main.cpp - ImageCodecCUDA 测试 CLI（list-devices / info / decode / encode / bench）。
 //
 // 只做文件 I/O 与参数解析：格式探测与编解码全部走 C API，保证 CLI 与库行为一致。

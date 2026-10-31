@@ -1,3 +1,11 @@
+/*
+ * File: png_filter_cuda.cpp
+ * Brief: Png filter cuda.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // png_filter_cuda.cpp - PNG 行滤波 CUDA 实现。
 #include "png_filter_cuda.h"
 

@@ -1,3 +1,11 @@
+<!--
+ * File: README.md
+ * Brief: ImageCodecCUDA.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+-->
+
 # ImageCodecCUDA
 
 CUDA 后端图像编解码库：TIFF / PNG / JPEG 的 GPU 编解码、参考画质指标与硬件调参工具。

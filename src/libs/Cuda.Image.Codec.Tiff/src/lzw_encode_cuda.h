@@ -1,3 +1,11 @@
+/*
+ * File: lzw_encode_cuda.h
+ * Brief: Lzw encode cuda.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // lzw_encode_cuda.h - TIFF LZW 的 CUDA 编码器（单位并行 kernel）。
 #pragma once
 

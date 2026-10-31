@@ -1,3 +1,11 @@
+/*
+ * File: metrics.cu
+ * Brief: Metrics.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // metrics.cu - MSE / SSIM / MS-SSIM 的 CUDA kernel（单尺度累加）。
 //
 // 并行形态：一个线程负责一个 (像素, 通道)。

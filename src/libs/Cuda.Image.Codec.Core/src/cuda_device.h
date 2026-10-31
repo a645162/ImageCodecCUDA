@@ -1,3 +1,11 @@
+/*
+ * File: cuda_device.h
+ * Brief: Cuda device.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // cuda_device.h - CUDA 设备枚举与 context/stream RAII 句柄。
 //
 // 本库刻意不使用 CUDA Runtime 的「隐式默认 context 懒初始化」：每个 Codec 唯一持有

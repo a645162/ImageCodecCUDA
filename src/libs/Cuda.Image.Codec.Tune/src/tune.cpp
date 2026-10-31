@@ -1,3 +1,11 @@
+/*
+ * File: tune.cpp
+ * Brief: Tune.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // tune.cpp - 参数扫描实现。
 #include "tune.h"
 

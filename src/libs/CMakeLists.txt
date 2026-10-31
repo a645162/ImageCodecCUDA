@@ -1,3 +1,9 @@
+# File: src/libs/CMakeLists.txt
+# Brief: CMake build configuration.
+# Author: Haomin Kong
+# Email: a645162@163.com
+# Created: 2026-10-31
+
 # libs/ 下为多个独立静态库，各自一个目录、各自一个命名空间别名：
 #   Core   —— CUDA 设备/流/缓冲 RAII 与错误上下文
 #   Common —— 容器与像素的宿主侧实现（BMP/TIFF 容器、PNG 容器、LZW 解码、zlib 封装）

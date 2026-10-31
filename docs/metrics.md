@@ -1,3 +1,11 @@
+<!--
+ * File: metrics.md
+ * Brief: 画质指标（MSE / PSNR / SSIM / MS-SSIM）.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+-->
+
 # 画质指标（MSE / PSNR / SSIM / MS-SSIM）
 
 编解码库里必须有画质指标，理由是「压得多小」只有和「画质降了多少」一起看才有意义。

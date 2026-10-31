@@ -1,3 +1,11 @@
+/*
+ * File: cuda_error.cpp
+ * Brief: Cuda error.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // cuda_error.cpp - CUDA 错误文本实现。
 #include "cuda_error.h"
 

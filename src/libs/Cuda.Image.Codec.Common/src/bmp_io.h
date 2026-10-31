@@ -1,3 +1,11 @@
+/*
+ * File: bmp_io.h
+ * Brief: Bmp io.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // bmp_io.h - 24-bit BMP 读写（CLI/测试用的中间格式，非产品路径）。
 #pragma once
 

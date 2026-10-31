@@ -1,3 +1,9 @@
+# File: src/libs/Cuda.Image.Codec.Png/CMakeLists.txt
+# Brief: CMake build configuration.
+# Author: Haomin Kong
+# Email: a645162@163.com
+# Created: 2026-10-31
+
 # PNG 模块：行滤波在 CUDA kernel，deflate/inflate 在 zlib。
 add_library(Cuda.Image.Codec.Png STATIC
   src/png_codec.h

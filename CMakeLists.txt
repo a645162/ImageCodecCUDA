@@ -1,3 +1,9 @@
+# File: CMakeLists.txt
+# Brief: CMake build configuration.
+# Author: Haomin Kong
+# Email: a645162@163.com
+# Created: 2026-10-31
+
 cmake_minimum_required(VERSION 3.24)
 
 # nvcc 不一定在 PATH 上（例如只通过 /usr/local/cuda-13.2 安装）。这里在 project()

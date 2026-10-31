@@ -1,3 +1,11 @@
+/*
+ * File: cuda_device.cpp
+ * Brief: Cuda device.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // cuda_device.cpp - 设备枚举与句柄实现。
 #include "cuda_device.h"
 

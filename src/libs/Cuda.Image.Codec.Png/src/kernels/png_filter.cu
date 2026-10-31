@@ -1,3 +1,11 @@
+/*
+ * File: png_filter.cu
+ * Brief: Png filter.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // kernels/png_filter.cu - PNG 行滤波 kernel。
 //
 // 关键性质：PNG 的 filter 预测值只来自「原始行」的左侧/B 上方/左上样本，

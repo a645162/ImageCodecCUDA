@@ -1,3 +1,11 @@
+/*
+ * File: tiff_container.h
+ * Brief: Tiff container.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // tiff_container.h - TIFF 6.0 容器读写（LE/BE 读取、LE 写出、strip/tile 布局）。
 //
 // 只做容器：压缩/解压由调用方提供字节流。宿主侧实现，与 GPU 无关。

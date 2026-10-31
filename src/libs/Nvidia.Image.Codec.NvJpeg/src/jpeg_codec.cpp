@@ -1,3 +1,11 @@
+/*
+ * File: jpeg_codec.cpp
+ * Brief: Jpeg codec.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // jpeg_codec.cpp - nvJPEG 编解码实现。
 #include "jpeg_codec.h"
 

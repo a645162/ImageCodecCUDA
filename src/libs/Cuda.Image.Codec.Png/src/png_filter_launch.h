@@ -1,3 +1,11 @@
+/*
+ * File: png_filter_launch.h
+ * Brief: Png filter launch.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // png_filter_launch.h - PNG 滤波 kernel 启动入口。
 #pragma once
 

@@ -1,3 +1,11 @@
+/*
+ * File: cuda_memory.cpp
+ * Brief: Cuda memory.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // cuda_memory.cpp - 显存查询与预算记账实现。
 #include "cuda_memory.h"
 

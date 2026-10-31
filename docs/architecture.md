@@ -1,3 +1,11 @@
+<!--
+ * File: architecture.md
+ * Brief: 架构.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+-->
+
 # 架构
 
 本库是 ImageCodecOffload 的 CUDA 后端。整体分工是：

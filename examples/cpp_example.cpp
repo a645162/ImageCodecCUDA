@@ -1,3 +1,11 @@
+/*
+ * File: cpp_example.cpp
+ * Brief: Cpp example.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // cpp_example.cpp - C++ RAII 示例：PNG -> JPEG 转码并打印设备能力。
 #include <ImageCodecCUDA/image_codec_cuda.hpp>
 

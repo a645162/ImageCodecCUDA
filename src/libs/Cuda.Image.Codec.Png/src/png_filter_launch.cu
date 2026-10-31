@@ -1,3 +1,11 @@
+/*
+ * File: png_filter_launch.cu
+ * Brief: Png filter launch.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // png_filter_launch.cu - 绑定 PNG 滤波 kernel 启动参数。
 #include "png_filter_launch.h"
 

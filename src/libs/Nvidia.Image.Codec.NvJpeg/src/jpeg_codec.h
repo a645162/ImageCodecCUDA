@@ -1,3 +1,11 @@
+/*
+ * File: jpeg_codec.h
+ * Brief: Jpeg codec.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // jpeg_codec.h - baseline JPEG 编解码（nvJPEG）。
 //
 // 为什么用 nvJPEG 而不是自己写 DCT kernel：nvJPEG 在 Ada/Hopper 上使用专用

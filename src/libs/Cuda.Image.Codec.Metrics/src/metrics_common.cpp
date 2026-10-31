@@ -1,3 +1,11 @@
+/*
+ * File: metrics_common.cpp
+ * Brief: Metrics common.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // metrics_common.cpp - 共享定义的实现（与设备无关，GPU/CPU 两条路径都链接它）。
 #include "metrics_common.h"
 

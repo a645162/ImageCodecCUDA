@@ -1,3 +1,11 @@
+/*
+ * File: lzw_encode_launch.h
+ * Brief: Lzw encode launch.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // lzw_encode_launch.h - kernel 启动入口（.cpp 侧不直接依赖 __global__ 语法）。
 #pragma once
 

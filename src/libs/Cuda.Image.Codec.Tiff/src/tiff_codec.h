@@ -1,3 +1,11 @@
+/*
+ * File: tiff_codec.h
+ * Brief: Tiff codec.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // tiff_codec.h - TIFF 编解码门面（容器 + LZW；编码可走 GPU，解码走 CPU）。
 //
 // 解码为什么在 CPU：LZW 解码是严格串行依赖（字典条目依赖前一条输出），

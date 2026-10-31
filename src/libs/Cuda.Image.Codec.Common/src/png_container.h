@@ -1,3 +1,11 @@
+/*
+ * File: png_container.h
+ * Brief: Png container.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // png_container.h - PNG 容器（IHDR/IDAT/IEND）与行滤波的宿主侧实现。
 //
 // 分工（与后端无关，写在这里是为了让三个 GPU 后端共用同一套容器语义）：

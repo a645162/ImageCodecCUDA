@@ -1,3 +1,11 @@
+<!--
+ * File: tune.md
+ * Brief: 参数调优（`ImageCodecCUDA::Tune` 与 `icu_tune`）.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+-->
+
 # 参数调优（`ImageCodecCUDA::Tune` 与 `icu_tune`）
 
 ## 为什么需要它

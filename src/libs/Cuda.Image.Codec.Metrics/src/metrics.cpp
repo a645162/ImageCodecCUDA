@@ -1,3 +1,11 @@
+/*
+ * File: metrics.cpp
+ * Brief: Metrics.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // metrics.cpp - MSE / PSNR / SSIM / MS-SSIM 的 CUDA 实现（按行 band 流式上传）。
 //
 // 为什么按 band 而不是整幅上传：Merge.bmp 是 32000x19656x3（1.89 GB），

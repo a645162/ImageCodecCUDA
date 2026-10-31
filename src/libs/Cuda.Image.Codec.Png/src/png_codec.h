@@ -1,3 +1,11 @@
+/*
+ * File: png_codec.h
+ * Brief: Png codec.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // png_codec.h - PNG 编解码门面（编码滤波在 GPU，deflate/inflate 在 zlib）。
 //
 // 解码为什么在 CPU：unfilter 的依赖链是「同一行左侧 → 上一行」，每一行都依赖

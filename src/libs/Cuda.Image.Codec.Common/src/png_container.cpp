@@ -1,3 +1,11 @@
+/*
+ * File: png_container.cpp
+ * Brief: Png container.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // png_container.cpp - PNG 容器与行滤波实现（zlib）。
 #include "png_container.h"
 

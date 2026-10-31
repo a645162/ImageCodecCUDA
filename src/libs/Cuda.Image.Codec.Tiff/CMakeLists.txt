@@ -1,3 +1,9 @@
+# File: src/libs/Cuda.Image.Codec.Tiff/CMakeLists.txt
+# Brief: CMake build configuration.
+# Author: Haomin Kong
+# Email: a645162@163.com
+# Created: 2026-10-31
+
 # TIFF 模块：容器在 Common，LZW 编码在 CUDA kernel，解码走 CPU 参考实现。
 add_library(Cuda.Image.Codec.Tiff STATIC
   src/tiff_codec.h

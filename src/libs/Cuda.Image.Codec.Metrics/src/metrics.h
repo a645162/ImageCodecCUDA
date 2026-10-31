@@ -1,3 +1,11 @@
+/*
+ * File: metrics.h
+ * Brief: Metrics.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // metrics.h - 两张图的参考画质指标：MSE / PSNR / SSIM / MS-SSIM（GPU 并行）。
 //
 // 为什么编解码库里要有它：JPEG 是有损的，「压得多小」只有在画质可量化时才有

@@ -1,3 +1,11 @@
+/*
+ * File: cuda_error.h
+ * Brief: Cuda error.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // cuda_error.h - CUDA 错误到可读文本的统一转换（带调用点上下文）。
 #pragma once
 

@@ -1,3 +1,11 @@
+/*
+ * File: image_codec_cuda.hpp
+ * Brief: Image codec cuda.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // image_codec_cuda.hpp - ImageCodecCUDA 的 C++ RAII 包装。
 //
 // 只做「资源管理 + 错误转异常」，不引入第二套语义：

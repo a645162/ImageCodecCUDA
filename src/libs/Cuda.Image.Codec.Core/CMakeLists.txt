@@ -1,3 +1,9 @@
+# File: src/libs/Cuda.Image.Codec.Core/CMakeLists.txt
+# Brief: CMake build configuration.
+# Author: Haomin Kong
+# Email: a645162@163.com
+# Created: 2026-10-31
+
 # CUDA 基础设施：设备/流/缓冲 RAII、错误文本、显存查询与预算记账、宿主侧计时。
 add_library(Cuda.Image.Codec.Core STATIC
   src/cuda_error.h

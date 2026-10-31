@@ -1,3 +1,9 @@
+# File: src/libs/Cuda.Image.Codec.Api/CMakeLists.txt
+# Brief: CMake build configuration.
+# Author: Haomin Kong
+# Email: a645162@163.com
+# Created: 2026-10-31
+
 # 对外稳定 C API（include/ImageCodecCUDA/image_codec_cuda.h）实现库。
 add_library(Cuda.Image.Codec.Api STATIC
   src/image_codec_cuda.cpp

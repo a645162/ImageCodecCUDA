@@ -1,3 +1,9 @@
+# File: src/libs/Cuda.Image.Codec.Metrics/CMakeLists.txt
+# Brief: CMake build configuration.
+# Author: Haomin Kong
+# Email: a645162@163.com
+# Created: 2026-10-31
+
 # 画质指标：MSE / PSNR / SSIM / MS-SSIM（GPU 并行，CPU 参考实现同库提供）。
 
 # 定义与 ImageCodecOffload 其它后端（OpenCL / Vulkan）完全一致：

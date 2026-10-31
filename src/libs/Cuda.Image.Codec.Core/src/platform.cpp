@@ -1,3 +1,11 @@
+/*
+ * File: platform.cpp
+ * Brief: Platform.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // platform.cpp - 宿主侧小工具实现（C++20 chrono，无平台 ifdef）。
 #include "platform.h"
 

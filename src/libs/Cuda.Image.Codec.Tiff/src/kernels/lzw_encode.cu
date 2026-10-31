@@ -1,3 +1,11 @@
+/*
+ * File: lzw_encode.cu
+ * Brief: Lzw encode.
+ * Author: Haomin Kong
+ * Email: a645162@163.com
+ * Created: 2026-10-31
+ */
+
 // kernels/lzw_encode.cu - TIFF LZW 编码 kernel（单元并行）。
 //
 // 每个线程独立编码一条 strip 或一个 tile，使用全局内存里的开放寻址哈希字典
