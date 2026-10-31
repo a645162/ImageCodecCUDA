@@ -77,10 +77,6 @@ bool encodeTiff(const ImageBuffer &img, const TiffEncodeOptions &options,
     if (err != nullptr) *err = "TIFF: invalid image buffer";
     return false;
   }
-  if (img.channels == 2) {
-    if (err != nullptr) *err = "TIFF: gray+alpha (2ch) is not written";
-    return false;
-  }
   if (options.compression != 1 && options.compression != 5) {
     if (err != nullptr) *err = "TIFF: unsupported compression";
     return false;

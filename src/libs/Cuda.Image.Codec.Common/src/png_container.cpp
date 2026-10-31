@@ -43,6 +43,8 @@ int colorTypeOf(int channels) {
   switch (channels) {
   case 1:
     return 0; // grayscale
+  case 2:
+    return 4; // gray + alpha
   case 3:
     return 2; // RGB
   case 4:

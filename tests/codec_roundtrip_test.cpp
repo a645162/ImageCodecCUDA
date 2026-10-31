@@ -122,6 +122,41 @@ void testTiff(const char *what, int tile_size, int rows_per_strip,
   check(back.data == img.data, what);
 }
 
+// 通道矩阵：1/2/3/4 通道各自原样往返。TIFF 的 2 通道（灰度+Alpha）最容易漏，
+// 它要求 spp=2 + Photometric=BlackIsZero + ExtraSamples 同时写对，
+// 而且 BitsPerSample 恰好 4 字节必须内联。
+void testTiffChannels(int channels) {
+  const ImageBuffer img = makeImage(129, 95, channels);
+  image_codec::cuda::tiff::TiffEncodeOptions opt;
+  opt.compression = 5;
+  opt.rows_per_strip = 16;
+  opt.use_gpu = true;
+
+  std::vector<uint8_t> bytes;
+  bool gpu_used = false;
+  std::string err;
+  if (!image_codec::cuda::tiff::encodeTiff(img, opt, &bytes, &gpu_used, &err)) {
+    std::fprintf(stderr, "FAIL: tiff %dch encode (%s)\n", channels,
+                 err.c_str());
+    ++g_failures;
+    return;
+  }
+
+  ImageBuffer back;
+  if (!image_codec::cuda::tiff::decodeTiff(bytes.data(), bytes.size(), &back,
+                                           &err)) {
+    std::fprintf(stderr, "FAIL: tiff %dch decode (%s)\n", channels,
+                 err.c_str());
+    ++g_failures;
+    return;
+  }
+
+  check(back.width == img.width && back.height == img.height &&
+            back.channels == channels,
+        "tiff channel matrix dimensions");
+  check(back.data == img.data, "tiff channel matrix roundtrip");
+}
+
 void testPngFilterParity() {
   const ImageBuffer img = makeImage(97, 61, 3);
   for (int filter = 0; filter <= 4; ++filter) {
@@ -448,6 +483,10 @@ int main() {
   testPng(3);
   testPng(4);
   testPng(1);
+  testPng(2);
+  for (int channels = 1; channels <= 4; ++channels) {
+    testTiffChannels(channels);
+  }
   testJpeg();
   testJpegGray();
   testMetricsSuite();

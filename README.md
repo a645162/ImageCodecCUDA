@@ -9,12 +9,13 @@ CUDA 后端图像编解码库：TIFF / PNG / JPEG 的 GPU 编解码、参考画�
 
 | 格式 | 编码 | 解码 | 说明 |
 | --- | --- | --- | --- |
-| TIFF | GPU（LZW，strip/tile） | CPU | 6.0；Compression=1(none) / 5(LZW)；strip 与 tiled 两种布局 |
-| PNG | GPU（行滤波，含 5 种滤波器自适应） | CPU（zlib） | 1 / 3 / 4 通道；滤波在 GPU，DEFLATE 在 CPU |
+| TIFF | GPU（LZW，strip/tile） | CPU | 6.0；Compression=1(none) / 5(LZW)；strip 与 tiled；1 / 2 / 3 / 4 通道 |
+| PNG | GPU（行滤波，含 5 种滤波器自适应） | CPU（zlib） | 1 / 2 / 3 / 4 通道；滤波在 GPU，DEFLATE 在 CPU |
 | JPEG | GPU（nvJPEG / NVJPG） | GPU（nvJPEG） | baseline，质量 1..100，4:4:4 / 4:2:2 / 4:2:0 |
 
-- **通道保真**：1 通道进 1 通道出。灰度 JPEG 走 `CSS_GRAY`（真 1 分量文件），
-  绝不悄悄展开成 3 通道。
+- **通道保真**：1/2/3/4 通道各自原样往返（PNG color type 0/4/2/6、TIFF spp 1..4），
+  绝不隐式升维或丢 Alpha。灰度 JPEG 走 `CSS_GRAY`（真 1 分量文件），
+  而 JPEG 没有 Alpha 样本，2/4 通道会被明确拒绝。
 - **画质指标**：MSE / PSNR / SSIM / MS-SSIM，GPU 并行，另有 CPU 参考实现逐项对拍。
 - **显存可控**：可查询设备与句柄的显存用量，可设硬上限；超限给可读原因，绝不静默 OOM。
   资源不足与真失败用不同状态码（`OUT_OF_MEMORY` vs `ENCODE/DECODE_FAILED`），

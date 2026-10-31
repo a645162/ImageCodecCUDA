@@ -244,7 +244,7 @@ bool TiffWriter::openStrip(int w, int h, int channels, int rows_per_strip,
                            uint16_t compression, size_t n_strips) {
   reset();
   if (w <= 0 || h <= 0 || rows_per_strip <= 0 || n_strips == 0) return false;
-  if (channels != 1 && channels != 3 && channels != 4) return false;
+  if (channels < 1 || channels > 4) return false;
   tiled_ = false;
   w_ = w;
   h_ = h;
@@ -264,7 +264,7 @@ bool TiffWriter::openTile(int w, int h, int channels, uint32_t tile_w,
   if (w <= 0 || h <= 0 || tile_w == 0 || tile_h == 0 || n_tiles == 0) {
     return false;
   }
-  if (channels != 1 && channels != 3 && channels != 4) return false;
+  if (channels < 1 || channels > 4) return false;
   tiled_ = true;
   w_ = w;
   h_ = h;
@@ -310,13 +310,20 @@ void TiffWriter::putU32(size_t at, uint32_t v) {
 
 void TiffWriter::build() {
   const int spp = channels_;
-  const uint16_t photometric = spp >= 3 ? 2 : 1; // RGB / BlackIsZero
-  const bool has_alpha = spp == 4;
+  // 1/2 -> BlackIsZero（灰度、灰度+A），3/4 -> RGB（RGB、RGBA）。
+  const uint16_t photometric = spp >= 3 ? 2 : 1;
+  // 多出来的那个样本是 Alpha：spp=2 与 spp=4 都必须写 ExtraSamples，
+  // 否则 spp=4 会被解码器按 CMYK 解释，颜色整体错位。
+  const bool has_alpha = (spp == 2 || spp == 4);
 
   const size_t n_tags = (tiled_ ? 11 : 10) + (has_alpha ? 1 : 0);
   const size_t ifd_size = 2 + n_tags * 12 + 4;
   const size_t off_bps = 8 + ifd_size;
-  const size_t bps_bytes = spp > 1 ? static_cast<size_t>(spp) * 2 : 0;
+  // 只有数组总字节数 > 4（spp >= 3）时才需要把 BitsPerSample 放到 Value 之外；
+  // spp==2 的两个 SHORT 恰好 4 字节，必须内联成 0x00080008，否则读回来是
+  // 「位深 = 数组偏移」这种离谱数字。
+  const bool bps_array = spp >= 3;
+  const size_t bps_bytes = bps_array ? static_cast<size_t>(spp) * 2 : 0;
   const size_t off_off = off_bps + bps_bytes;
   const size_t off_cnt = off_off + n_ * 4;
   const size_t data_start = off_cnt + n_ * 4;
@@ -360,7 +367,8 @@ void TiffWriter::build() {
   entry(kTagImageWidth, kTypeLong, 1, static_cast<uint32_t>(w_));
   entry(kTagImageLength, kTypeLong, 1, static_cast<uint32_t>(h_));
   entry(kTagBitsPerSample, kTypeShort, static_cast<uint32_t>(spp),
-        spp > 1 ? static_cast<uint32_t>(off_bps) : 8u);
+        spp == 1 ? 8u
+                 : (spp == 2 ? 0x00080008u : static_cast<uint32_t>(off_bps)));
   entry(kTagCompression, kTypeShort, 1, compression_);
   entry(kTagPhotometric, kTypeShort, 1, photometric);
   entry(kTagSamplesPerPixel, kTypeShort, 1, static_cast<uint32_t>(spp));
@@ -395,8 +403,13 @@ void TiffWriter::build() {
 
   putU32(e, 0); // next IFD
 
-  for (int k = 0; k < spp; ++k) {
-    putU16(off_bps + static_cast<size_t>(k) * 2, 8);
+  // 只有真的把 BitsPerSample 放到数组区时才写这一段：spp<=2 时 off_bps 与
+  // strip 偏移数组重合，无条件写会覆盖掉第一个 strip 的偏移（单 strip 恰好
+  // 走得通，多 strip 直接坏）。
+  if (bps_array) {
+    for (int k = 0; k < spp; ++k) {
+      putU16(off_bps + static_cast<size_t>(k) * 2, 8);
+    }
   }
   for (size_t i = 0; i < n_; ++i) {
     putU32(off_off + i * 4, static_cast<uint32_t>(data_start + offs_[i]));

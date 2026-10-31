@@ -63,15 +63,15 @@ image_codec_cuda_set_memory_limit(codec, 2ull << 30);
 
 ## 通道保真
 
-**1 通道进必须 1 通道出，3 通道进必须 3 通道出。** 这条不是洁癖：上层用通道数判断
+**通道数原样往返：1/2/3/4 进，同一个数出。** 这条不是洁癖：上层用通道数判断
 「这张图是不是灰度」「体积为什么变成三倍」，一旦某个后端把灰度悄悄展开成 RGB，上层的
 判断全部错位，而肉眼几乎看不出来。三个格式各有各的坑：
 
 | 格式 | 坑 | 做法 |
 | --- | --- | --- |
 | JPEG | nvJPEG 的编码输入只有 3 通道枚举（`NVJPEG_INPUT_RGB/BGR/RGBI/BGRI`），没有单通道入口；只把输入凑成 3 通道而采样因子仍是 4:2:0，输出的就是三分量 JPEG | 宿主侧复制成 R=G=B，同时把采样因子强制成 `NVJPEG_CSS_GRAY`；输出 `ncomp==1`。解码侧按 `ncomp==1 \|\| css==GRAY` 走 `NVJPEG_OUTPUT_Y`，返回 1 通道 |
-| PNG | 解码走 zlib + CPU 反滤波，通道数来自 IHDR 的 color type，天然保真 | 不解码成固定 RGB；1/3/4 通道各自成路 |
-| TIFF | `SamplesPerPixel` 与 `Photometric` 必须一起写对，写错只会在别的解码器里显形 | 按 `spp` 写 `Photometric=RGB(2)` / `BlackIsZero(1)` |
+| PNG | 解码走 zlib + CPU 反滤波，通道数来自 IHDR 的 color type，天然保真 | 不解码成固定 RGB；1/2/3/4 通道各自成路（color type 0/4/2/6） |
+| TIFF | `SamplesPerPixel`、`Photometric` 与 `ExtraSamples` 必须一起写对：spp=4 少写 ExtraSamples 会被读成 CMYK | 按 `spp` 写 `Photometric=RGB(2)` / `BlackIsZero(1)`，spp=2/4 再写 `ExtraSamples=2`（非关联 Alpha）；BitsPerSample 在 spp≤2 时内联 |
 
 `codec_roundtrip_test` 的 `testJpegGray` 专门锁这条：灰度 JPEG 解码结果必须是 1 通道，
 且 PSNR > 32 dB。

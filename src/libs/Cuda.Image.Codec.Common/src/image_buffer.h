@@ -1,7 +1,8 @@
-// image_buffer.h - 宿主侧图像缓冲（top-down，1/3/4 通道）。
+// image_buffer.h - 宿主侧图像缓冲（top-down，1/2/3/4 通道）。
 //
 // 与主项目 ImageViewer 的约定一致：行序 top-down，第 0 行是图像顶部；
-// 通道数为实际样本数（灰度/ RGB / RGBA），不做隐式升维。
+// 通道数为实际样本数：1 = 灰度、2 = 灰度+Alpha、3 = RGB、4 = RGBA。
+// 与 PNG 的四种颜色类型一一对应；不做隐式升维，也不丢 Alpha。
 #pragma once
 
 #include <cstddef>
