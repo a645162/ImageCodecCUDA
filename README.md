@@ -13,8 +13,12 @@ CUDA 后端图像编解码库：TIFF / PNG / JPEG 的 GPU 编解码、参考画�
 | PNG | GPU（行滤波，含 5 种滤波器自适应） | CPU（zlib） | 1 / 3 / 4 通道；滤波在 GPU，DEFLATE 在 CPU |
 | JPEG | GPU（nvJPEG / NVJPG） | GPU（nvJPEG） | baseline，质量 1..100，4:4:4 / 4:2:2 / 4:2:0 |
 
+- **通道保真**：1 通道进 1 通道出。灰度 JPEG 走 `CSS_GRAY`（真 1 分量文件），
+  绝不悄悄展开成 3 通道。
 - **画质指标**：MSE / PSNR / SSIM / MS-SSIM，GPU 并行，另有 CPU 参考实现逐项对拍。
 - **显存可控**：可查询设备与句柄的显存用量，可设硬上限；超限给可读原因，绝不静默 OOM。
+  资源不足与真失败用不同状态码（`OUT_OF_MEMORY` vs `ENCODE/DECODE_FAILED`），
+  上层才知道该不该回退 CPU。
 - **调参库与 CLI**：在自己硬件上扫描 tile/批大小/线程数/滤波策略，输出 Markdown 或 JSON。
 
 ## 构建

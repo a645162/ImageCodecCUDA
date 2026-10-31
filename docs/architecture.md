@@ -61,6 +61,21 @@ image_codec_cuda_set_memory_limit(codec, 2ull << 30);
 句柄与设备是两个视角，必须分开：设备空闲显存受其它进程影响，瞬时可查但不代表本句柄
 能用到；句柄的 `budget/used/peak` 是本库自己记账的结果，可以稳定用于决策。
 
+## 通道保真
+
+**1 通道进必须 1 通道出，3 通道进必须 3 通道出。** 这条不是洁癖：上层用通道数判断
+「这张图是不是灰度」「体积为什么变成三倍」，一旦某个后端把灰度悄悄展开成 RGB，上层的
+判断全部错位，而肉眼几乎看不出来。三个格式各有各的坑：
+
+| 格式 | 坑 | 做法 |
+| --- | --- | --- |
+| JPEG | nvJPEG 的编码输入只有 3 通道枚举（`NVJPEG_INPUT_RGB/BGR/RGBI/BGRI`），没有单通道入口；只把输入凑成 3 通道而采样因子仍是 4:2:0，输出的就是三分量 JPEG | 宿主侧复制成 R=G=B，同时把采样因子强制成 `NVJPEG_CSS_GRAY`；输出 `ncomp==1`。解码侧按 `ncomp==1 \|\| css==GRAY` 走 `NVJPEG_OUTPUT_Y`，返回 1 通道 |
+| PNG | 解码走 zlib + CPU 反滤波，通道数来自 IHDR 的 color type，天然保真 | 不解码成固定 RGB；1/3/4 通道各自成路 |
+| TIFF | `SamplesPerPixel` 与 `Photometric` 必须一起写对，写错只会在别的解码器里显形 | 按 `spp` 写 `Photometric=RGB(2)` / `BlackIsZero(1)` |
+
+`codec_roundtrip_test` 的 `testJpegGray` 专门锁这条：灰度 JPEG 解码结果必须是 1 通道，
+且 PSNR > 32 dB。
+
 ## 只把最贵的一步放 GPU
 
 三个格式都是「GPU 做其中一段，其余留 CPU」，这不是半成品：
@@ -92,3 +107,24 @@ image_codec_cuda_set_memory_limit(codec, 2ull << 30);
   `std::string* err`。
 - 不允许把失败吞掉降级成「另一个能跑的实现」：某后端不支持的算子要返回显式错误并附原因，
   由上层决定是否回退 CPU。
+
+### 失败分类（决定上层该不该回退）
+
+状态码本身不够用：「这台设备的资源不够」换 CPU 还有救，「这张图真的编坏了」换后端只会
+把 bug 藏起来。两者必须给出不同状态码，否则上层只能猜。分类集中在
+`Cuda.Image.Codec.Api` 的 `classifyFailure()`：
+
+| 情形 | 状态码 | 上层行为 |
+| --- | --- | --- |
+| 显存预算 / 设备空闲显存不足；nvJPEG 内部 `allocator failure` | `OUT_OF_MEMORY` | 可回退（CPU 用内存顶上） |
+| nvJPEG `not supported` / `not available`（渐进式、16 bit、缺组件） | `UNSUPPORTED_FORMAT` | 可回退（别的解码器可能能读） |
+| 其余 | `ENCODE_FAILED` / `DECODE_FAILED` | 真失败，不允许被别的后端悄悄救回来 |
+
+判断依据不是匹配错误字符串，而是 `MemoryBudget::exhausted()`——它在 `reserve()` 里就
+已知道「是预算/设备显存不够」。每次操作前 `takeExhausted()` 清掉上一轮结论，避免这一轮
+的失败被上一轮的结论污染。
+
+一个真实的例子：Merge.bmp（32000×19656，629 Mpix）按质量 92 编码会选 4:4:4，nvJPEG 在
+这个尺寸上返回 `allocator failure`（显存远未用满，是它自身的缓冲限制），4:2:0 / 4:2:2
+则正常。这必须表现为 `OUT_OF_MEMORY` 让上层回退 CPU，而不是「编码失败」。**不要**为此
+静默降采样——那会悄悄改写调用方请求的画质语义。
