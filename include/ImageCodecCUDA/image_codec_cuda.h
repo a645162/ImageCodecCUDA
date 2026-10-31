@@ -189,6 +189,12 @@ image_codec_cuda_encode(image_codec_cuda_codec *codec, int format,
                         const image_codec_cuda_encode_params *params, void *out,
                         size_t *out_len, size_t out_capacity);
 
+// 将像素送入 CUDA 设备再读回宿主内存。该入口不改变样本值，供上层
+// Hybrid CPU/GPU 编解码路径验证 GPU staging；码流编解码仍由上层 CPU 库完成。
+IMAGE_CODEC_CUDA_API image_codec_cuda_status image_codec_cuda_gpu_stage(
+    image_codec_cuda_codec *codec, const image_codec_cuda_image *in,
+    image_codec_cuda_image *out);
+
 // ---- 画质指标 ----
 //
 // 三项各自独立，只算需要的那个（代价差得很远：MSE 每像素读 2 字节，SSIM 要读

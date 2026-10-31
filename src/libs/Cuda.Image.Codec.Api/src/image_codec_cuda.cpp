@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "cuda_device.h"
+#include "cuda_buffer.h"
 #include "cuda_memory.h"
 #include "image_buffer.h"
 #include "jpeg_codec.h"
@@ -416,6 +417,64 @@ image_codec_cuda_encode(image_codec_cuda_codec *codec, int format,
     return IMAGE_CODEC_CUDA_ERR_OUT_OF_MEMORY;
   }
   std::memcpy(out, encoded.data(), encoded.size());
+  return IMAGE_CODEC_CUDA_OK;
+}
+
+image_codec_cuda_status image_codec_cuda_gpu_stage(
+    image_codec_cuda_codec *codec, const image_codec_cuda_image *in,
+    image_codec_cuda_image *out) {
+  if (codec == nullptr || in == nullptr || out == nullptr || in->data == nullptr ||
+      in->width == 0 || in->height == 0 || in->channels == 0 ||
+      in->channels > 4) {
+    return IMAGE_CODEC_CUDA_ERR_INVALID_ARGUMENT;
+  }
+  std::memset(out, 0, sizeof(*out));
+  codec->budget.takeExhausted();
+
+  const size_t row_bytes = static_cast<size_t>(in->width) * in->channels;
+  if (in->height > static_cast<size_t>(-1) / row_bytes) {
+    return IMAGE_CODEC_CUDA_ERR_INVALID_ARGUMENT;
+  }
+  const size_t bytes = row_bytes * in->height;
+  std::vector<uint8_t> packed;
+  const uint8_t *source = in->data;
+  if (in->stride != 0 && in->stride != row_bytes) {
+    if (in->stride < row_bytes) return IMAGE_CODEC_CUDA_ERR_INVALID_ARGUMENT;
+    packed.resize(bytes);
+    for (uint32_t y = 0; y < in->height; ++y) {
+      std::memcpy(packed.data() + static_cast<size_t>(y) * row_bytes,
+                  in->data + static_cast<size_t>(y) * in->stride, row_bytes);
+    }
+    source = packed.data();
+  }
+
+  image_codec::cuda::Device device;
+  std::string err;
+  if (!device.init(codec->device_index, &err)) {
+    return IMAGE_CODEC_CUDA_ERR_BACKEND_UNAVAILABLE;
+  }
+  image_codec::cuda::DeviceBuffer buffer;
+  buffer.setBudget(&codec->budget);
+  if (!buffer.upload(source, bytes, &err, device.stream())) {
+    return codec->budget.takeExhausted()
+               ? IMAGE_CODEC_CUDA_ERR_OUT_OF_MEMORY
+               : IMAGE_CODEC_CUDA_ERR_INTERNAL;
+  }
+  std::vector<uint8_t> result(bytes);
+  if (!buffer.download(result.data(), bytes, &err, device.stream())) {
+    return codec->budget.takeExhausted()
+               ? IMAGE_CODEC_CUDA_ERR_OUT_OF_MEMORY
+               : IMAGE_CODEC_CUDA_ERR_INTERNAL;
+  }
+
+  out->data = static_cast<uint8_t *>(std::malloc(bytes));
+  if (out->data == nullptr) return IMAGE_CODEC_CUDA_ERR_OUT_OF_MEMORY;
+  std::memcpy(out->data, result.data(), bytes);
+  out->width = in->width;
+  out->height = in->height;
+  out->channels = in->channels;
+  out->stride = row_bytes;
+  out->data_size = bytes;
   return IMAGE_CODEC_CUDA_OK;
 }
 
